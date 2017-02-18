@@ -1,177 +1,39 @@
-ArcGIS.PCL
-==========
+<img align="right" height="120" src="https://raw.githubusercontent.com/davetimmins/ArcGIS.PCL/master/logo.png">
 
-Use ArcGIS Server REST resources without an official SDK [more information](http://davetimmins.com/2013/July/ArcGIS-PCL/).
+### ArcGIS.PCL
 
-It can also be used for just working with types and as well as some ArcGIS Server types you can also use GeoJSON FeatureCollections with the ability to convert GeoJSON <-> ArcGIS Features.
+[![Build status](https://travis-ci.org/davetimmins/ArcGIS.PCL.svg?branch=master)](https://travis-ci.org/davetimmins/ArcGIS.PCL) [![Build status](https://ci.appveyor.com/api/projects/status/6kquae4fokkeuxg1?svg=true)](https://ci.appveyor.com/project/davetimmins/arcgis-pcl) 
 
-Typical use case would be the need to call some ArcGIS REST resource from server .NET code or maybe a console app. Rather than having to fudge a dependency to an existing SDK you can use this. 
-Should work with .NET for Windows Store apps, .NET framework 4.5, Silverlight 4 and higher, Windows Phone 7.5 and higher
+[![NuGet Status](http://img.shields.io/nuget/v/ArcGIS.PCL.svg?style=flat)](https://www.nuget.org/packages/ArcGIS.PCL/) [![GitHub Status](https://img.shields.io/github/release/davetimmins/ArcGIS.PCL.svg?style=flat)](https://github.com/davetimmins/ArcGIS.PCL/releases)
 
-Since the serialization is specific to your implementation you will need to create an ISerializer to use in your gateway. The test project has ServiceStack.Text and Json.NET [example serializers](https://github.com/davetimmins/ArcGIS.PCL/blob/dev/ArcGIS.Test/ISerializer.cs) 
+[![Xamarin Status](http://img.shields.io/badge/Xamarin-5.0.3-blue.svg?style=flat)](https://components.xamarin.com/view/arcgis.pcl) (no longer updated, just use the NuGet package instead)
 
-Supports the following as typed operations:
+Use ArcGIS Server REST resources without an official SDK.
 
- - Generate Token (automatically if credentials are specified in gateway)
- - Query
- - Apply Edits
- - Single Input Geocode
- - Suggest
- - Reverse Geocode
- - Describe site (returns a url for every service)
- - Simplify
- - Project
- - Buffer
+- [Quickstart](https://github.com/davetimmins/ArcGIS.PCL/wiki/Quickstart)
+- [Wiki](https://github.com/davetimmins/ArcGIS.PCL/wiki)
+- [Examples](https://github.com/davetimmins/ArcGIS.PCL/wiki/Examples)
 
-Some example of it in use for server side processing in web sites
+### Can I help to improve it and/or fix bugs? ##
 
- - [Describe site] (https://arcgissitedescriptor.azurewebsites.net/)
- - [Convert between GeoJSON and ArcGIS Features] (http://arcgisgeojson.azurewebsites.net/)
- - [Server side geometry operations] (http://eqnz.azurewebsites.net/)
- - [Server side geocode] (http://loc8.azurewebsites.net/map?text=wellington, new zealand)
+Absolutely! Please feel free to raise issues, fork the source code, send pull requests, etc.
 
-See some of the [tests](https://github.com/davetimmins/ArcGIS.PCL/blob/dev/ArcGIS.Test/ArcGISGatewayTests.cs) for some example calls.
+No pull request is too small. Even whitespace fixes are appreciated. Before you contribute anything make sure you read [CONTRIBUTING](https://github.com/davetimmins/ArcGIS.PCL/wiki/Contributing).
 
-###Gateway Use Cases
-
-#### ArcGIS Server with non secure resources
-```csharp
-public class ArcGISGateway : PortalGateway
-{
-    public ArcGISGateway(ISerializer serializer)
-        : base(@"http://sampleserver3.arcgisonline.com/ArcGIS/", serializer)
-    { }
-}
-
-... new ArcGISGateway(serializer);
-```
-#### ArcGIS Server with secure resources
-```csharp
-public class SecureGISGateway : SecureArcGISServerGateway
-{
-    public SecureGISGateway(ISerializer serializer)
-        : base(@"http://serverapps10.esri.com/arcgis", "user1", "pass.word1", serializer)
-    { }
-}
-
-... new SecureGISGateway(serializer);
-```
-#### ArcGIS Server with secure resources and token service at different location
-```csharp
-public class SecureTokenProvider : TokenProvider
-{
-    public SecureTokenProvider(ISerializer serializer)
-        : base(@"http://serverapps10.esri.com/arcgis", "user1", "pass.word1", serializer)
-    { }
-}
-
-public class SecureGISGateway : PortalGateway
-{
-    public SecureGISGateway(ISerializer serializer, ITokenProvider tokenProvider)
-        : base(@"http://serverapps10.esri.com/arcgis", serializer, tokenProvider)
-    { }
-}
-
-... new SecureGISGateway(serializer, new SecureTokenProvider(serializer));
-```
-
-#### ArcGIS Online either secure or non secure  
-```csharp
-... new ArcGISOnlineGateway(serializer);
- 
-... new ArcGISOnlineGateway(serializer, new ArcGISOnlineTokenProvider("user", "pass", serializer));
-```
-### Converting between ArcGIS Feature Set from hosted FeatureService and GeoJSON FeatureCollection
-```csharp
-static ISerializer _serializer = new ServiceStackSerializer();
-static Dictionary<String, Func<String, FeatureCollection<IGeoJsonGeometry>>> _funcMap = new Dictionary<String, Func<String, FeatureCollection<IGeoJsonGeometry>>>
-{
-    { GeometryTypes.Point, (uri) => new ProxyGateway(uri, _serializer).GetGeoJson<Point>(uri) },
-    { GeometryTypes.MultiPoint, (uri) => new ProxyGateway(uri, _serializer).GetGeoJson<MultiPoint>(uri) },
-    { GeometryTypes.Envelope, (uri) => new ProxyGateway(uri, _serializer).GetGeoJson<Extent>(uri) },
-    { GeometryTypes.Polygon, (uri) => new ProxyGateway(uri, _serializer).GetGeoJson<Polygon>(uri) },
-    { GeometryTypes.Polyline, (uri) => new ProxyGateway(uri, _serializer).GetGeoJson<Polyline>(uri) }
-};
-
-...
-
-var layer = new ProxyGateway(uri, _serializer).GetAnything(uri.AsEndpoint());
-if (layer == null || !layer.ContainsKey("geometryType")) throw new HttpException("You must enter a valid layer url.");
-return _funcMap[layer["geometryType"]](uri);
-
-...
-
-public class AgsObject : JsonObject, IPortalResponse
-{
-    [System.Runtime.Serialization.DataMember(Name = "error")]
-    public ArcGISError Error { get; set; }
-}
-
-public class ProxyGateway : PortalGateway
-{
-    public ProxyGateway(String rootUrl, ISerializer serializer)
-        : base(rootUrl, serializer)
-    { }
-
-    public QueryResponse<T> Query<T>(Query queryOptions) where T : IGeometry
-    {
-        return Get<QueryResponse<T>, Query>(queryOptions).Result;
-    }
-
-    public AgsObject GetAnything(ArcGISServerEndpoint endpoint)
-    {
-        return Get<AgsObject>(endpoint).Result;
-    }
-
-    public FeatureCollection<IGeoJsonGeometry> GetGeoJson<T>(String uri) where T : IGeometry
-    {
-        var result = Query<T>(new Query(uri.AsEndpoint()));
-        result.Features.First().Geometry.SpatialReference = result.SpatialReference;
-        var features = result.Features.ToList();
-        if (result.SpatialReference.Wkid != SpatialReference.WGS84.Wkid)
-            features = new ProjectGateway(Serializer).Project<T>(features, SpatialReference.WGS84);
-        return features.ToFeatureCollection();
-    }
-}
-
-public class ProjectGateway : PortalGateway
-{
-    public ProjectGateway(ISerializer serializer)
-        : base(@"http://services.arcgisonline.co.nz/ArcGIS/", serializer)
-    { }
-
-    public List<Feature<T>> Project<T>(List<Feature<T>> features, SpatialReference outputSpatialReference) where T : IGeometry
-    {
-        var op = new ProjectGeometry<T>("/Utilities/Geometry/GeometryServer".AsEndpoint(), features, outputSpatialReference);
-        var projected = await Post<GeometryOperationResponse<T>, ProjectGeometry<T>>(op).Result;
-
-        var result = features.UpdateGeometries<T>(projected.Geometries);
-        if (result.First().Geometry.SpatialReference == null) result.First().Geometry.SpatialReference = outputSpatialReference;
-        return result;
-    }
-}
-
-```
-### Converting between GeoJSON FeatureCollection and ArcGIS Feature Set
-```csharp
-static Dictionary<String, Func<String, List<Feature<IGeometry>>>> _funcMap = new Dictionary<String, Func<String, List<Feature<IGeometry>>>>
-{
-    { "Point", (data) => JsonSerializer.DeserializeFromString<FeatureCollection<GeoJsonPoint>>(data).ToFeatures<GeoJsonPoint>() },
-    { "MultiPoint", (data) => JsonSerializer.DeserializeFromString<FeatureCollection<GeoJsonLineString>>(data).ToFeatures<GeoJsonLineString>() },
-    { "LineString", (data) => JsonSerializer.DeserializeFromString<FeatureCollection<GeoJsonLineString>>(data).ToFeatures<GeoJsonLineString>() },
-    { "MultiLineString", (data) => JsonSerializer.DeserializeFromString<FeatureCollection<GeoJsonLineString>>(data).ToFeatures<GeoJsonLineString>() },
-    { "Polygon", (data) => JsonSerializer.DeserializeFromString<FeatureCollection<GeoJsonPolygon>>(data).ToFeatures<GeoJsonPolygon>() },
-    { "MultiPolygon", (data) => JsonSerializer.DeserializeFromString<FeatureCollection<GeoJsonMultiPolygon>>(data).ToFeatures<GeoJsonMultiPolygon>() }
-};
-
-...
-
-return _funcMap["Point"](data);
-```
-
-### Download
+### Installation
 If you have [NuGet](http://nuget.org) installed, the easiest way to get started is to install via NuGet:
 
     PM> Install-Package ArcGIS.PCL
 
-or you can get the code from here.
+On Xamarin you can add the [ArcGIS.PCL component](http://components.xamarin.com/view/ArcGIS.PCL) from the component store or use NuGet since it is now supported in Xamarin Studio.
+
+Of course you can also get the code from this site.
+
+### What do the version numbers mean? ##
+
+ArcGIS.PCL uses [Semantic Versioning](http://semver.org/).
+
+### Icon
+
+Icon made by [Freepik](http://www.freepik.com) from [www.flaticon.com](http://www.flaticon.com/free-icon/triangle-of-triangles_32915)
+                

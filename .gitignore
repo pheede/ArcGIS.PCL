@@ -54,6 +54,14 @@ _ReSharper*/
 
 #NuGet
 packages/
+dist/
+lib/
+artifacts/
+Backup/
+.fake/
+
+#nodejs
+node_modules/
 
 #clientbin
 ClientBin/
